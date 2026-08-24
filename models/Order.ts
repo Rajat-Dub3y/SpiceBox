@@ -22,6 +22,8 @@ export interface IOrder extends Document {
   trackingCarrier: string | null;
   confirmationEmailSent: boolean;
   trackingEmailSent: boolean;
+  paymentFailedAttempts: number;
+  lastPaymentError: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -87,6 +89,14 @@ const OrderSchema = new Schema<IOrder>(
     trackingEmailSent: {
       type: Boolean,
       default: false,
+    },
+    paymentFailedAttempts: {
+      type: Number,
+      default: 0,
+    },
+    lastPaymentError: {
+      type: String,
+      default: null,
     },
   },
   { timestamps: true }

@@ -73,6 +73,38 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  if (event.type === "payment_intent.payment_failed") {
+    const paymentIntent = event.data.object as Stripe.PaymentIntent;
+
+    try {
+      await connectToDatabase();
+
+      const order = await Order.findOne({
+        stripePaymentIntentId: paymentIntent.id,
+      });
+
+      if (!order) {
+        console.error(
+          `No order found for failed PaymentIntent ${paymentIntent.id}`
+        );
+        return NextResponse.json({ received: true });
+      }
+
+      // Don't touch order.status here — it should stay "pending". The
+      // PaymentIntent is still alive and the customer can retry with the
+      // same clientSecret, so this order can still become "paid" normally
+      // via payment_intent.succeeded. We're only recording the failure for
+      // visibility (admin panel / your own debugging), not ending the order.
+      order.paymentFailedAttempts += 1;
+      order.lastPaymentError =
+        paymentIntent.last_payment_error?.message || "Payment failed.";
+      await order.save();
+    } catch (err) {
+      console.error("Error processing payment_intent.payment_failed:", err);
+      return NextResponse.json({ error: "Processing error." }, { status: 500 });
+    }
+  }
+
   // Acknowledge all other event types without special handling for now.
   return NextResponse.json({ received: true });
 }
