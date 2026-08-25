@@ -4,13 +4,10 @@ import { OtpVerification } from "@/models/OtpVerification";
 import { Order } from "@/models/Order";
 import { stripe } from "@/lib/stripe";
 
-interface ShippingAddressInput {
-  name: string;
-  line1: string;
-  line2?: string;
-  city: string;
-  zip: string;
-}
+// Matches the actual checkout UI flow: email -> otp -> payment -> shipping.
+// Shipping address isn't known yet at this point, so this only needs the
+// verified email + quantity. Shipping gets attached afterward via
+// /api/orders/[id]/shipping, once payment has already succeeded.
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,25 +15,10 @@ export async function POST(request: NextRequest) {
     const email = (body?.email || "").toLowerCase().trim();
     const verifiedToken = body?.verifiedToken;
     const quantity = Number(body?.quantity) || 1;
-    const shippingAddress: ShippingAddressInput | undefined =
-      body?.shippingAddress;
 
     if (!email || !verifiedToken) {
       return NextResponse.json(
         { error: "Email and verified token are required." },
-        { status: 400 }
-      );
-    }
-
-    if (
-      !shippingAddress ||
-      !shippingAddress.name ||
-      !shippingAddress.line1 ||
-      !shippingAddress.city ||
-      !shippingAddress.zip
-    ) {
-      return NextResponse.json(
-        { error: "A complete shipping address is required." },
         { status: 400 }
       );
     }
@@ -65,20 +47,10 @@ export async function POST(request: NextRequest) {
       stripePaymentIntentId: null,
       amount,
       quantity,
-      shippingAddress: {
-        name: shippingAddress.name,
-        line1: shippingAddress.line1,
-        line2: shippingAddress.line2,
-        city: shippingAddress.city,
-        state: "California",
-        zip: shippingAddress.zip,
-      },
       status: "pending",
+      // shippingAddress intentionally omitted — attached later
     });
 
-    // Create the PaymentIntent now that we have an order to attach it to.
-    // orderId goes in metadata so the webhook can look the order up even
-    // in edge cases where matching by stripePaymentIntentId alone isn't enough.
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: "usd",

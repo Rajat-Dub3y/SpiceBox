@@ -16,7 +16,7 @@ export interface IOrder extends Document {
   stripePaymentIntentId: string | null; // unique — doubles as our webhook idempotency guard
   amount: number; // in cents
   quantity: number;
-  shippingAddress: IShippingAddress;
+  shippingAddress?: IShippingAddress; // set after payment succeeds, not at order creation — see checkout flow
   status: OrderStatus;
   trackingId: string | null;
   trackingCarrier: string | null;
@@ -66,7 +66,7 @@ const OrderSchema = new Schema<IOrder>(
     },
     shippingAddress: {
       type: ShippingAddressSchema,
-      required: true,
+      required: false,
     },
     status: {
       type: String,
