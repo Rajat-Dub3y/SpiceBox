@@ -1,20 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Order } from "../types";
+import { Order } from "@/app/admin/types";
 import OrderRow from "./OrderRow";
 
 interface OrdersTableProps {
-  initialOrders: Order[];
+  orders: Order[];
 }
 
-export default function OrdersTable({ initialOrders }: OrdersTableProps) {
+export default function OrdersTable({ orders: initialOrders }: OrdersTableProps) {
   const [orders, setOrders] = useState(initialOrders);
 
   const handleTrackingSent = (orderId: string, trackingId: string) => {
     setOrders((prev) =>
       prev.map((o) =>
-        o.id === orderId ? { ...o, trackingId, status: "Shipped" } : o
+        o.id === orderId ? { ...o, trackingId, status: "shipped" } : o
       )
     );
   };

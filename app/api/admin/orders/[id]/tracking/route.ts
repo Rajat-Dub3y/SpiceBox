@@ -9,9 +9,10 @@ import { sendTrackingEmail } from "@/lib/email";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const trackingId = (body?.trackingId || "").trim();
     const trackingCarrier = body?.trackingCarrier || null;
@@ -25,7 +26,7 @@ export async function POST(
 
     await connectToDatabase();
 
-    const order = await Order.findById(params.id);
+    const order = await Order.findById(id);
 
     if (!order) {
       return NextResponse.json({ error: "Order not found." }, { status: 404 });

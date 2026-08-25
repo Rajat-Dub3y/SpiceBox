@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Order } from "../types";
+import { Order } from "@/app/admin/types";
 
 interface OrderRowProps {
   order: Order;
+  onTrackingSent: (orderId: string, trackingId: string) => void;
 }
 
 async function sendTrackingEmail(
@@ -26,7 +27,7 @@ async function sendTrackingEmail(
   return { success: true };
 }
 
-export default function OrderRow({ order }: OrderRowProps) {
+export default function OrderRow({ order, onTrackingSent }: OrderRowProps) {
   const [trackingId, setTrackingId] = useState(order.trackingId ?? "");
   const [sending, setSending] = useState(false);
   const [sentConfirmation, setSentConfirmation] = useState(
@@ -47,6 +48,7 @@ export default function OrderRow({ order }: OrderRowProps) {
       const result = await sendTrackingEmail(order.id, trackingId.trim());
       if (result.success) {
         setSentConfirmation(true);
+        onTrackingSent(order.id, trackingId.trim());
       } else {
         setError(result.error || "Something went wrong sending the email.");
       }

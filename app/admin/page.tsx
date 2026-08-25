@@ -5,7 +5,7 @@ import { Order as OrderType } from "./types";
 export const dynamic = "force-dynamic";
 
 async function getOrders(): Promise<OrderType[]> {
-  const headersList = headers();
+  const headersList = await headers();
   const host = headersList.get("host");
   const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
   // Forward the same Authorization header the browser sent for this page —

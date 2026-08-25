@@ -12,17 +12,23 @@ const TAGLINE = 'A kitchen staple, reimagined by hand.';
 export function Hero() {
   return (
     <section className="relative h-screen min-h-[600px] w-full overflow-hidden">
-      {/* Full-bleed background video (placeholder source — swap for real footage before launch) */}
+      {/*
+        Real drone footage of Hogenakkal Falls, Karnataka, India (Kaveri
+        river) — shot on location by Anil Sharma, via Pexels
+        (https://www.pexels.com/video/majestic-aerial-view-of-hogenakkal-falls-india-33560881/).
+        Free to use under the Pexels License; hotlinked here for now — pull
+        your own copy and host it before launch, same as the product photos.
+      */}
       <video
         className="absolute inset-0 h-full w-full object-cover"
         autoPlay
         muted
         loop
         playsInline
-        poster="https://images.pexels.com/photos/19208265/pexels-photo-19208265.jpeg?auto=compress&cs=tinysrgb&w=1920"
+        poster="https://images.pexels.com/videos/33560881/aerialphotography-chasingwaterfalls-droneview-hogenakkalfalls-33560881.jpeg?auto=compress&cs=tinysrgb&h=1080&fit=crop&w=1920"
       >
         <source
-          src="https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4"
+          src="https://videos.pexels.com/video-files/33560881/14268733_2560_1440_60fps.mp4"
           type="video/mp4"
         />
       </video>
