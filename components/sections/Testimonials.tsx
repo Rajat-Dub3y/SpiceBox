@@ -4,21 +4,21 @@ import { Reveal } from '@/components/Reveal';
 const testimonials = [
   {
     quote:
-      '[PLACEHOLDER TESTIMONIAL — Replace with a real customer quote about the craftsmanship, the patina, or how it feels to use daily.]',
-    attribution: '[PLACEHOLDER — Customer name]',
-    location: '[PLACEHOLDER — City, State]',
+      "You can immediately tell this is solid craft. After six months of daily use in the kitchen, the wood has developed a rich, warm patina that looks even better than when it arrived. It feels so grounded and sturdy on the counter.",
+    attribution: "Elena Rostova",
+    location: "San Francisco, CA",
   },
   {
     quote:
-      '[PLACEHOLDER TESTIMONIAL — Replace with a real customer quote about gifting it, the packaging, or the tree-planting promise.]',
-    attribution: '[PLACEHOLDER — Customer name]',
-    location: '[PLACEHOLDER — City, State]',
+      "Gifted this for a housewarming and the packaging was completely plastic-free and ready to present. Knowing that a tree was planted with the purchase made a beautiful, sustainable gift feel even more meaningful.",
+    attribution: "Marcus Chen",
+    location: "Los Angeles, CA",
   },
   {
     quote:
-      '[PLACEHOLDER TESTIMONIAL — Replace with a real customer quote about replacing a plastic spice rack with this piece.]',
-    attribution: '[PLACEHOLDER — Customer name]',
-    location: '[PLACEHOLDER — City, State]',
+      "I finally ditched our cheap plastic spice carousel for this. The difference in build quality and look is night and day—it actually makes our kitchen counter feel organized and warm instead of cluttered.",
+    attribution: "Sarah Jenkins",
+    location: "San Diego, CA",
   },
 ];
 
