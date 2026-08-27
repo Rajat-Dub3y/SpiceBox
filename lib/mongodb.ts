@@ -4,6 +4,9 @@ import mongoose from "mongoose";
 // (app/api/**/route.ts), since the frontend is already Next.js — this
 // avoids standing up a separate Express server. If you'd rather have a
 // standalone Express backend instead, say so and I'll restructure this.
+import dns from "node:dns/promises";
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
+
 
 const MONGODB_URI = process.env.MONGODB_URI;
 

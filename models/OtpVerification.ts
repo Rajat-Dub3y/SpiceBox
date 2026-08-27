@@ -19,7 +19,6 @@ const OtpVerificationSchema = new Schema<IOtpVerification>(
       required: true,
       lowercase: true,
       trim: true,
-      index: true,
     },
     hashedOtp: {
       type: String,

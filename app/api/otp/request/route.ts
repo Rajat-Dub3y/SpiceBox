@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
         verifiedToken: null,
         tokenExpiresAt: null,
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
 
     await sendOtpEmail(email, otp);
