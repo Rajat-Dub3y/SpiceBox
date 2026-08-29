@@ -54,15 +54,15 @@ const jsonLd = {
   '@graph': [
     {
       '@type': 'Organization',
-      name: 'Neem & Grain',
+      name: 'The Eco Shop',
       url: 'https://neemandgrain.example',
       logo: 'https://i.etsystatic.com/56971455/r/il/ba4bac/8173093976/il_794xN.8173093976_8m0o.jpg',
       description:
         'Small-batch maker of handmade wooden spice boxes carved from solid Neem wood.',
-      email: 'hello@neemandgrain.example',
+      email: 'hello@theecoshop.co',
       sameAs: [
-        'https://instagram.com/neemandgrain',
-        'https://linkedin.com/company/neemandgrain',
+        'https://www.instagram.com/theecoshop_/',
+        'https://www.linkedin.com/company/vimalac/',
       ],
     },
     {
@@ -77,7 +77,7 @@ const jsonLd = {
       ],
       brand: {
         '@type': 'Brand',
-        name: 'Neem & Grain',
+        name: 'The Eco Shop',
       },
       offers: {
         '@type': 'Offer',
@@ -87,7 +87,7 @@ const jsonLd = {
         availability: 'https://schema.org/InStock',
         seller: {
           '@type': 'Organization',
-          name: 'Neem & Grain',
+          name: 'The Eco Shop',
         },
       },
     },

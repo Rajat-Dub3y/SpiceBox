@@ -7,12 +7,15 @@ import { sendTrackingEmail } from "@/lib/email";
 // /admin panel — see the updated `matcher` in middleware.ts, which now
 // includes /api/admin/:path* alongside /admin/:path*.
 
+// Single-product store for now — if a second product gets added later,
+// this needs to come from the order itself instead of being hardcoded.
+const PRODUCT_NAME = "Hexagonal Spice Box — Neem Wood";
+
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
     const body = await request.json();
     const trackingId = (body?.trackingId || "").trim();
     const trackingCarrier = body?.trackingCarrier || null;
@@ -26,7 +29,7 @@ export async function POST(
 
     await connectToDatabase();
 
-    const order = await Order.findById(id);
+    const order = await Order.findById(params.id);
 
     if (!order) {
       return NextResponse.json({ error: "Order not found." }, { status: 404 });
@@ -37,7 +40,13 @@ export async function POST(
     order.status = "shipped";
     await order.save();
 
-    await sendTrackingEmail(order.email, order.id, trackingId);
+    await sendTrackingEmail(
+      order.email,
+      order.id,
+      trackingId,
+      PRODUCT_NAME,
+      trackingCarrier
+    );
 
     order.trackingEmailSent = true;
     await order.save();

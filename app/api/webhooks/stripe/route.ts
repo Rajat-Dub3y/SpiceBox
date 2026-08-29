@@ -15,6 +15,10 @@ if (!webhookSecret) {
   throw new Error("STRIPE_WEBHOOK_SECRET is not set. Add it to .env.local.");
 }
 
+// Single-product store for now — if a second product gets added later,
+// this needs to come from the order itself instead of being hardcoded.
+const PRODUCT_NAME = "Hexagonal Spice Box — Neem Wood";
+
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
   const signature = request.headers.get("stripe-signature");
@@ -61,7 +65,12 @@ export async function POST(request: NextRequest) {
       await order.save();
 
       if (!order.confirmationEmailSent) {
-        await sendOrderConfirmationEmail(order.email, order.id);
+        await sendOrderConfirmationEmail(
+          order.email,
+          order.id,
+          PRODUCT_NAME,
+          order.amount
+        );
         order.confirmationEmailSent = true;
         await order.save();
       }

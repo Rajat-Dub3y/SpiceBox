@@ -39,7 +39,7 @@ export function Hero() {
       {/* Content */}
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center">
         <p className="mb-6 text-sm uppercase tracking-[0.3em] font-sans text-white/70">
-          Neem &amp; Grain
+          The Eco Shop
         </p>
         <h1 className="max-w-3xl font-serif text-4xl leading-tight text-white sm:text-5xl md:text-6xl lg:text-7xl text-balance">
           {TAGLINE}

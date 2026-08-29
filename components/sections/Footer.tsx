@@ -8,7 +8,7 @@ export function Footer() {
           {/* Brand */}
           <div className="text-center sm:text-left">
             <p className="font-serif text-2xl text-primary-foreground">
-              Neem &amp; Grain
+              The Eco Shop
             </p>
             <p className="mt-1 font-sans text-sm text-primary-foreground/60">
               Handmade wooden spice boxes, carved to last.
@@ -18,14 +18,14 @@ export function Footer() {
           {/* Contact + socials */}
           <div className="flex flex-col items-center gap-4 sm:items-end">
             <a
-              href="mailto:hello@neemandgrain.example"
+              href="mailto:hello@theecoshop.co"
               className="font-sans text-sm text-primary-foreground/70 transition-colors hover:text-primary-foreground"
             >
-              hello@neemandgrain.example
+              hello@theecoshop.co
             </a>
             <div className="flex gap-4">
               <a
-                href="https://instagram.com/neemandgrain"
+                href="https://www.instagram.com/theecoshop_/"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Instagram"
@@ -34,7 +34,7 @@ export function Footer() {
                 <Instagram className="h-5 w-5" strokeWidth={1.5} />
               </a>
               <a
-                href="https://linkedin.com/company/neemandgrain"
+                href="https://www.linkedin.com/company/vimalac/"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="LinkedIn"
@@ -43,7 +43,7 @@ export function Footer() {
                 <Linkedin className="h-5 w-5" strokeWidth={1.5} />
               </a>
               <a
-                href="mailto:hello@neemandgrain.example"
+                href="mailto:hello@theecoshop.co"
                 aria-label="Email"
                 className="flex h-10 w-10 items-center justify-center rounded-full border border-primary-foreground/20 text-primary-foreground/70 transition-colors hover:border-primary-foreground/40 hover:text-primary-foreground"
               >
@@ -55,7 +55,7 @@ export function Footer() {
 
         <div className="mt-12 border-t border-primary-foreground/10 pt-6 text-center">
           <p className="font-sans text-xs text-primary-foreground/40">
-            &copy; {new Date().getFullYear()} Neem &amp; Grain. All rights reserved.
+            &copy; {new Date().getFullYear()} The Eco Shop. All rights reserved.
           </p>
         </div>
       </div>

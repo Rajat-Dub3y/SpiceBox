@@ -21,7 +21,7 @@ export function About() {
             <p>
               Most spice boxes are disposable. They arrive bright and promising,
               then disappear into a drawer within a month — scratched, stained,
-              and quietly replaced by the next one. We started Neem &amp; Grain
+              and quietly replaced by the next one. We started The Eco Shop
               because we wanted something different in our own kitchen, and
               couldn&apos;t find it: a spice box worth keeping out on the counter.
             </p>
