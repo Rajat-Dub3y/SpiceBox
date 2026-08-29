@@ -56,7 +56,20 @@ export async function POST(request: NextRequest) {
       { upsert: true, returnDocument: "after" }
     );
 
-    await sendOtpEmail(email, otp);
+    // Separate try/catch specifically around the send — the OTP record is
+    // already saved at this point, so if the email fails to actually go
+    // out, that's a distinct failure mode from a bad request or DB error
+    // above, worth its own log line to find quickly (e.g. Resend being
+    // down, domain not verified, rate limit on their end, etc.).
+    try {
+      await sendOtpEmail(email, otp);
+    } catch (emailError) {
+      console.error(`OTP email failed to send to ${email}:`, emailError);
+      return NextResponse.json(
+        { error: "Could not send verification email. Please try again." },
+        { status: 502 }
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
