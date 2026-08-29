@@ -11,7 +11,7 @@ const serif = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://neemandgrain.example'),
+  metadataBase: new URL('https://theecoshop.co'),
   title: 'Handmade Neem Wood Spice Box | Hexagonal Masala Box',
   description:
     'A hexagonal wooden spice box hand-carved from solid Neem wood, with six compartments, a hinged glass lid, and a hand-turned spoon. Small-batch, plastic-free, and built to last.',
@@ -55,7 +55,7 @@ const jsonLd = {
     {
       '@type': 'Organization',
       name: 'The Eco Shop',
-      url: 'https://neemandgrain.example',
+      url: 'https://theecoshop.co',
       logo: 'https://i.etsystatic.com/56971455/r/il/ba4bac/8173093976/il_794xN.8173093976_8m0o.jpg',
       description:
         'Small-batch maker of handmade wooden spice boxes carved from solid Neem wood.',
@@ -81,7 +81,7 @@ const jsonLd = {
       },
       offers: {
         '@type': 'Offer',
-        url: 'https://neemandgrain.example',
+        url: 'https://theecoshop.co',
         priceCurrency: 'USD',
         price: '54.99',
         availability: 'https://schema.org/InStock',
