@@ -16,7 +16,7 @@ export interface IOrder extends Document {
   stripePaymentIntentId: string | null; // unique — doubles as our webhook idempotency guard
   amount: number; // in cents
   quantity: number;
-  shippingAddress?: IShippingAddress; // set after payment succeeds, not at order creation — see checkout flow
+  shippingAddress: IShippingAddress; // known at order creation — collected in the same step as email, before OTP
   status: OrderStatus;
   trackingId: string | null;
   trackingCarrier: string | null;
@@ -52,8 +52,12 @@ const OrderSchema = new Schema<IOrder>(
     stripePaymentIntentId: {
       type: String,
       default: null,
-      unique: true,
-      sparse: true, // allows multiple `null`s (pending orders pre-payment) without violating uniqueness
+      // No `unique`/`sparse` here — see the partial index below instead.
+      // sparse only excludes documents where the field is *missing*, not
+      // documents where it's present but null — and every new order sets
+      // it to null explicitly, so a plain sparse-unique index still
+      // collides on the second null. A partial index that only applies
+      // when the field is actually a string avoids that.
     },
     amount: {
       type: Number,
@@ -66,7 +70,7 @@ const OrderSchema = new Schema<IOrder>(
     },
     shippingAddress: {
       type: ShippingAddressSchema,
-      required: false,
+      required: true,
     },
     status: {
       type: String,
@@ -100,6 +104,19 @@ const OrderSchema = new Schema<IOrder>(
     },
   },
   { timestamps: true }
+);
+
+// Unique only when stripePaymentIntentId is an actual string — this is
+// what makes it safe for every new pending order to have `null` here
+// without colliding, while still guaranteeing no two orders ever share
+// the same real PaymentIntent ID once one is assigned (our webhook
+// idempotency guard).
+OrderSchema.index(
+  { stripePaymentIntentId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { stripePaymentIntentId: { $type: "string" } },
+  }
 );
 
 export const Order: Model<IOrder> =

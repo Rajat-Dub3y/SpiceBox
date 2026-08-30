@@ -4,10 +4,19 @@ import { OtpVerification } from "@/models/OtpVerification";
 import { Order } from "@/models/Order";
 import { stripe } from "@/lib/stripe";
 
-// Matches the actual checkout UI flow: email -> otp -> payment -> shipping.
-// Shipping address isn't known yet at this point, so this only needs the
-// verified email + quantity. Shipping gets attached afterward via
-// /api/orders/[id]/shipping, once payment has already succeeded.
+// Flow: email + shipping address are collected together in one step, then
+// OTP verification, then this endpoint creates the order (with shipping
+// already known) and the PaymentIntent in one call, then payment.
+// (Shipping is no longer attached after the fact — see the note about
+// /api/orders/[id]/shipping below.)
+
+interface ShippingAddressInput {
+  name: string;
+  line1: string;
+  line2?: string;
+  city: string;
+  zip: string;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,10 +24,25 @@ export async function POST(request: NextRequest) {
     const email = (body?.email || "").toLowerCase().trim();
     const verifiedToken = body?.verifiedToken;
     const quantity = Number(body?.quantity) || 1;
+    const shippingAddress: ShippingAddressInput | undefined =
+      body?.shippingAddress;
 
     if (!email || !verifiedToken) {
       return NextResponse.json(
         { error: "Email and verified token are required." },
+        { status: 400 }
+      );
+    }
+
+    if (
+      !shippingAddress ||
+      !shippingAddress.name ||
+      !shippingAddress.line1 ||
+      !shippingAddress.city ||
+      !shippingAddress.zip
+    ) {
+      return NextResponse.json(
+        { error: "A complete shipping address is required." },
         { status: 400 }
       );
     }
@@ -47,14 +71,36 @@ export async function POST(request: NextRequest) {
       stripePaymentIntentId: null,
       amount,
       quantity,
+      shippingAddress: {
+        name: shippingAddress.name,
+        line1: shippingAddress.line1,
+        line2: shippingAddress.line2,
+        city: shippingAddress.city,
+        state: "California", // only option the frontend offers; hardcoded here too as a backend-side guarantee
+        zip: shippingAddress.zip,
+      },
       status: "pending",
-      // shippingAddress intentionally omitted — attached later
     });
 
+    // Passing shipping to Stripe too (not just saving it in our own DB) —
+    // this feeds Stripe's AVS/fraud checks and shows up on the payment's
+    // receipt/dashboard view, which we didn't have when shipping was
+    // collected after payment.
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: "usd",
       receipt_email: email,
+      shipping: {
+        name: shippingAddress.name,
+        address: {
+          line1: shippingAddress.line1,
+          line2: shippingAddress.line2,
+          city: shippingAddress.city,
+          state: "CA",
+          postal_code: shippingAddress.zip,
+          country: "US",
+        },
+      },
       metadata: {
         orderId: order.id,
       },

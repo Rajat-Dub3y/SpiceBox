@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Mail, Lock, CreditCard, Truck, Check, ArrowRight } from 'lucide-react';
+import { Mail, Lock, CreditCard, Check, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,20 +22,33 @@ import { PRODUCT } from '@/lib/product';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { getStripe } from '@/lib/stripe-client';
 
-type Step = 'email' | 'otp' | 'payment' | 'shipping' | 'confirmed';
+type Step = 'details' | 'otp' | 'payment' | 'confirmed';
 
 export function Checkout() {
-  const [step, setStep] = React.useState<Step>('email');
-  const [email, setEmail] = React.useState('');
-  const [otp, setOtp] = React.useState('');
+  const [step, setStep] = React.useState<Step>('details');
   const [loading, setLoading] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
+  // Contact + shipping, all collected in one step now
+  const [email, setEmail] = React.useState('');
+  const [firstName, setFirstName] = React.useState('');
+  const [lastName, setLastName] = React.useState('');
+  const [address, setAddress] = React.useState('');
+  const [address2, setAddress2] = React.useState('');
+  const [city, setCity] = React.useState('');
+  const [zip, setZip] = React.useState('');
+
+  const [otp, setOtp] = React.useState('');
   const [verifiedToken, setVerifiedToken] = React.useState<string | null>(null);
   const [clientSecret, setClientSecret] = React.useState<string | null>(null);
   const [orderId, setOrderId] = React.useState<string | null>(null);
 
-  async function handleOtpRequest() {
+  const detailsValid =
+    email && firstName && lastName && address && city && zip;
+
+  // Step 1: contact + shipping details, then request OTP
+  async function handleDetailsSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setErrorMessage(null);
     setLoading(true);
     try {
@@ -57,9 +70,8 @@ export function Checkout() {
     }
   }
 
-  // Verifying OTP and creating the PaymentIntent happen back-to-back here,
-  // since the "payment" step needs a clientSecret ready the moment it mounts
-  // (so the Payment Element has somewhere to render into).
+  // Step 2: verify OTP, then create the order + PaymentIntent together
+  // (shipping is already known at this point, so both happen in one call).
   async function handleOtpVerify() {
     setErrorMessage(null);
     setLoading(true);
@@ -81,7 +93,18 @@ export function Checkout() {
       const intentRes = await fetch('/api/checkout/create-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, verifiedToken: token, quantity: 1 }),
+        body: JSON.stringify({
+          email,
+          verifiedToken: token,
+          quantity: 1,
+          shippingAddress: {
+            name: `${firstName} ${lastName}`.trim(),
+            line1: address,
+            line2: address2 || undefined,
+            city,
+            zip,
+          },
+        }),
       });
       const intentData = await intentRes.json();
       if (!intentRes.ok) {
@@ -100,58 +123,15 @@ export function Checkout() {
   }
 
   // Called by PaymentStepInner once stripe.confirmPayment() actually
-  // succeeds — only then do we move to shipping.
+  // succeeds — nothing left to collect afterward now, straight to confirmed.
   function handlePaymentSuccess() {
-    setStep('shipping');
-  }
-
-  async function handleSubmitOrder(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setErrorMessage(null);
-    setLoading(true);
-
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    const firstName = String(formData.get('firstName') || '');
-    const lastName = String(formData.get('lastName') || '');
-    const address = String(formData.get('address') || '');
-    const address2 = String(formData.get('address2') || '');
-    const city = String(formData.get('city') || '');
-    const zip = String(formData.get('zip') || '');
-
-    try {
-      const res = await fetch(`/api/orders/${orderId}/shipping`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          shippingAddress: {
-            name: `${firstName} ${lastName}`.trim(),
-            line1: address,
-            line2: address2 || undefined,
-            city,
-            zip,
-          },
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setErrorMessage(data.error || 'Could not save shipping details. Please try again.');
-        return;
-      }
-      setStep('confirmed');
-    } catch {
-      setErrorMessage('Network error. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    setStep('confirmed');
   }
 
   const steps: { id: Step; label: string; icon: typeof Mail }[] = [
-    { id: 'email', label: 'Email', icon: Mail },
+    { id: 'details', label: 'Details', icon: Mail },
     { id: 'otp', label: 'Verify', icon: Lock },
     { id: 'payment', label: 'Payment', icon: CreditCard },
-    { id: 'shipping', label: 'Shipping', icon: Truck },
   ];
   const currentStepIndex = steps.findIndex((s) => s.id === step);
 
@@ -228,10 +208,10 @@ export function Checkout() {
             </div>
           )}
 
-          {/* Step 1: Email */}
-          {step === 'email' && (
+          {/* Step 1: Contact + shipping details, combined */}
+          {step === 'details' && (
             <Reveal>
-              <div className="space-y-4">
+              <form onSubmit={handleDetailsSubmit} className="space-y-4">
                 <div>
                   <Label htmlFor="email">Email address</Label>
                   <Input
@@ -241,21 +221,106 @@ export function Checkout() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="mt-2"
+                    required
                   />
                 </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="firstName">First name</Label>
+                    <Input
+                      id="firstName"
+                      placeholder="Jane"
+                      className="mt-2"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="lastName">Last name</Label>
+                    <Input
+                      id="lastName"
+                      placeholder="Doe"
+                      className="mt-2"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="address">Street address</Label>
+                  <Input
+                    id="address"
+                    placeholder="1234 Market St"
+                    className="mt-2"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="address2">Apartment, suite, etc. (optional)</Label>
+                  <Input
+                    id="address2"
+                    placeholder="Apt 5"
+                    className="mt-2"
+                    value={address2}
+                    onChange={(e) => setAddress2(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="city">City</Label>
+                    <Input
+                      id="city"
+                      placeholder="San Francisco"
+                      className="mt-2"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="zip">ZIP code</Label>
+                    <Input
+                      id="zip"
+                      placeholder="94103"
+                      className="mt-2"
+                      inputMode="numeric"
+                      value={zip}
+                      onChange={(e) => setZip(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="state">State</Label>
+                  <Select defaultValue="ca">
+                    <SelectTrigger id="state" className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ca">California</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <p className="font-sans text-xs text-muted-foreground">
-                  We&apos;ll send a verification code to this address.
+                  We&apos;ll send a verification code to your email before payment.
                 </p>
+
                 <Button
-                  onClick={handleOtpRequest}
-                  disabled={!email || loading}
+                  type="submit"
+                  disabled={!detailsValid || loading}
                   className="w-full"
                   size="lg"
                 >
                   {loading ? 'Sending code…' : 'Continue'}
                   {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
                 </Button>
-              </div>
+              </form>
             </Reveal>
           )}
 
@@ -296,12 +361,12 @@ export function Checkout() {
                 </Button>
                 <button
                   onClick={() => {
-                    setStep('email');
+                    setStep('details');
                     setErrorMessage(null);
                   }}
                   className="w-full text-center font-sans text-xs text-muted-foreground hover:text-foreground"
                 >
-                  Use a different email
+                  Edit details
                 </button>
               </div>
             </Reveal>
@@ -319,79 +384,7 @@ export function Checkout() {
             </Reveal>
           )}
 
-          {/* Step 4: Shipping address */}
-          {step === 'shipping' && (
-            <Reveal>
-              <form onSubmit={handleSubmitOrder} className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="firstName">First name</Label>
-                    <Input id="firstName" name="firstName" placeholder="Jane" className="mt-2" required />
-                  </div>
-                  <div>
-                    <Label htmlFor="lastName">Last name</Label>
-                    <Input id="lastName" name="lastName" placeholder="Doe" className="mt-2" required />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="address">Street address</Label>
-                  <Input
-                    id="address"
-                    name="address"
-                    placeholder="1234 Market St"
-                    className="mt-2"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="address2">Apartment, suite, etc. (optional)</Label>
-                  <Input id="address2" name="address2" placeholder="Apt 5" className="mt-2" />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="city">City</Label>
-                    <Input id="city" name="city" placeholder="San Francisco" className="mt-2" required />
-                  </div>
-                  <div>
-                    <Label htmlFor="zip">ZIP code</Label>
-                    <Input
-                      id="zip"
-                      name="zip"
-                      placeholder="94103"
-                      className="mt-2"
-                      inputMode="numeric"
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="state">State</Label>
-                  <Select defaultValue="ca">
-                    <SelectTrigger id="state" className="mt-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ca">California</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center justify-between border-t border-border pt-6">
-                  <div>
-                    <p className="font-sans text-xs text-muted-foreground">Total</p>
-                    <p className="font-serif text-2xl text-foreground">
-                      ${PRODUCT.price.toFixed(2)}
-                    </p>
-                  </div>
-                  <Button type="submit" disabled={loading} size="lg">
-                    {loading ? 'Placing order…' : 'Place order'}
-                  </Button>
-                </div>
-              </form>
-            </Reveal>
-          )}
-
-          {/* Step 5: Confirmation */}
+          {/* Step 4: Confirmation */}
           {step === 'confirmed' && (
             <Reveal>
               <div className="py-6 text-center">
@@ -440,7 +433,7 @@ function PaymentStepInner({
     if (error) {
       // Same PaymentIntent stays alive — Payment Element resets itself so
       // the customer can just fix their card details and hit Pay again.
-      // Nothing upstream (email, OTP, order) needs to restart.
+      // Nothing upstream (email, OTP, order, shipping) needs to restart.
       onError(
         error.message ||
           "Your payment couldn't be processed. You haven't been charged — please try again."
