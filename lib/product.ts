@@ -15,9 +15,13 @@ export const PRODUCT = {
 };
 
 export const PRODUCT_IMAGES = [
-  'https://i.etsystatic.com/56971455/r/il/ba4bac/8173093976/il_794xN.8173093976_8m0o.jpg',
-  'https://i.etsystatic.com/56971455/r/il/41cf14/8173093964/il_794xN.8173093964_gjtc.jpg',
-  'https://i.etsystatic.com/56971455/r/il/e71338/8173093950/il_794xN.8173093950_38mu.jpg',
+  '/I1.png',
+  '/I2.png',
+  '/I3.png',
+  '/I4.png',
+  '/I5.png',
+  '/I6.png',
+  '/I7.png',
   'https://i.etsystatic.com/56971455/r/il/d0ffde/8093337965/il_794xN.8093337965_4u4m.jpg',
   'https://i.etsystatic.com/56971455/r/il/9dc879/8093333187/il_794xN.8093333187_2xko.jpg',
   'https://i.etsystatic.com/56971455/r/il/f2aef3/8001636178/il_794xN.8001636178_mcey.jpg',
@@ -26,7 +30,6 @@ export const PRODUCT_IMAGES = [
   'https://i.etsystatic.com/56971455/r/il/03c6fa/8093333147/il_794xN.8093333147_nlyy.jpg',
   'https://i.etsystatic.com/56971455/r/il/acae1d/8001597040/il_794xN.8001597040_cfl4.jpg',
 ];
-
 export const PRODUCT_IMAGE_ALTS = [
   'Handmade hexagonal Neem wood spice box with glass lid closed',
   'Spice box with hinged glass lid open showing six compartments',
