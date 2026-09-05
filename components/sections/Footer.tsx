@@ -1,4 +1,5 @@
 import { Instagram, Linkedin, Mail } from 'lucide-react';
+import Image from 'next/image';
 
 export function Footer() {
   return (
@@ -7,9 +8,13 @@ export function Footer() {
         <div className="flex flex-col items-center gap-8 sm:flex-row sm:justify-between">
           {/* Brand */}
           <div className="text-center sm:text-left">
-            <p className="font-serif text-2xl text-primary-foreground">
-              The Eco Shop
-            </p>
+            <Image
+              src="/footer.png"
+              alt="The Eco Shop"
+              width={277}
+              height={160}
+              className="mx-auto h-auto w-32 sm:mx-0 sm:w-36"
+            />
             <p className="mt-1 font-sans text-sm text-primary-foreground/60">
               Handmade wooden spice boxes, carved to last.
             </p>
