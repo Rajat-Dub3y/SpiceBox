@@ -19,14 +19,14 @@ type MediaItem =
   | { type: 'image'; src: string; alt: string }
   | { type: 'video'; src: string; alt: string };
 
-// Add your local video file from the public folder (change extension if needed: .mp4, .webm, etc.)
+// Place product images first, then append the video at the end
 const MEDIA_ITEMS: MediaItem[] = [
-  { type: 'video', src: '/video.mp4', alt: `${PRODUCT.name} video preview` },
   ...PRODUCT_IMAGES.map((src, i) => ({
     type: 'image' as const,
     src,
     alt: PRODUCT_IMAGE_ALTS[i] ?? PRODUCT.name,
   })),
+  { type: 'video', src: '/Video.mp4', alt: `${PRODUCT.name} video preview` },
 ];
 
 export function Product() {
@@ -48,6 +48,8 @@ export function Product() {
                         {item.type === 'video' ? (
                           <video
                             src={item.src}
+                            poster={PRODUCT_IMAGES[0]}
+                            preload="metadata"
                             controls
                             playsInline
                             muted
@@ -83,6 +85,7 @@ export function Product() {
                       <video
                         src={item.src}
                         muted
+                        preload="metadata"
                         className="h-full w-full object-cover pointer-events-none"
                       />
                     ) : (
