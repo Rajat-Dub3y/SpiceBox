@@ -26,7 +26,7 @@ const MEDIA_ITEMS: MediaItem[] = [
     src,
     alt: PRODUCT_IMAGE_ALTS[i] ?? PRODUCT.name,
   })),
-  { type: 'video', src: '/Video.mp4', alt: `${PRODUCT.name} video preview` },
+  { type: 'video', src: '/video.mp4', alt: `${PRODUCT.name} video preview` },
 ];
 
 export function Product() {
