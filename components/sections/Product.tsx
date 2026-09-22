@@ -14,6 +14,21 @@ import { Button } from '@/components/ui/button';
 import { Reveal } from '@/components/Reveal';
 import { PRODUCT, PRODUCT_IMAGES, PRODUCT_IMAGE_ALTS } from '@/lib/product';
 
+// Define media item structure to handle both images and video
+type MediaItem = 
+  | { type: 'image'; src: string; alt: string }
+  | { type: 'video'; src: string; alt: string };
+
+// Add your local video file from the public folder (change extension if needed: .mp4, .webm, etc.)
+const MEDIA_ITEMS: MediaItem[] = [
+  { type: 'video', src: '/video.mp4', alt: `${PRODUCT.name} video preview` },
+  ...PRODUCT_IMAGES.map((src, i) => ({
+    type: 'image' as const,
+    src,
+    alt: PRODUCT_IMAGE_ALTS[i] ?? PRODUCT.name,
+  })),
+];
+
 export function Product() {
   return (
     <section id="product" className="px-6 py-24 sm:py-32">
@@ -27,17 +42,28 @@ export function Product() {
                 className="w-full"
               >
                 <CarouselContent>
-                  {PRODUCT_IMAGES.map((src, i) => (
-                    <CarouselItem key={src}>
+                  {MEDIA_ITEMS.map((item) => (
+                    <CarouselItem key={item.src}>
                       <div className="relative aspect-square overflow-hidden rounded-lg bg-secondary">
-                        <Image
-                          src={src}
-                          alt={PRODUCT_IMAGE_ALTS[i] ?? PRODUCT.name}
-                          fill
-                          sizes="(max-width: 1024px) 100vw, 50vw"
-                          className="object-cover"
-                          priority={i === 0}
-                        />
+                        {item.type === 'video' ? (
+                          <video
+                            src={item.src}
+                            controls
+                            playsInline
+                            muted
+                            loop
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <Image
+                            src={item.src}
+                            alt={item.alt}
+                            fill
+                            sizes="(max-width: 1024px) 100vw, 50vw"
+                            className="object-cover"
+                            priority={item.src === PRODUCT_IMAGES[0]}
+                          />
+                        )}
                       </div>
                     </CarouselItem>
                   ))}
@@ -48,18 +74,26 @@ export function Product() {
 
               {/* Thumbnail strip */}
               <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
-                {PRODUCT_IMAGES.slice(0, 6).map((src, i) => (
+                {MEDIA_ITEMS.slice(0, 6).map((item) => (
                   <div
-                    key={src}
-                    className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-secondary"
+                    key={item.src}
+                    className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-secondary flex items-center justify-center"
                   >
-                    <Image
-                      src={src}
-                      alt=""
-                      fill
-                      sizes="64px"
-                      className="object-cover"
-                    />
+                    {item.type === 'video' ? (
+                      <video
+                        src={item.src}
+                        muted
+                        className="h-full w-full object-cover pointer-events-none"
+                      />
+                    ) : (
+                      <Image
+                        src={item.src}
+                        alt=""
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
+                    )}
                   </div>
                 ))}
               </div>
@@ -69,10 +103,10 @@ export function Product() {
           {/* Product details */}
           <div className="flex flex-col">
             <Reveal>
-              <p className="mb-3 text-sm uppercase tracking-[0.25em] text-accent font-sans">
+              <p className="mb-3 font-sans text-sm uppercase tracking-[0.25em] text-accent">
                 The Product
               </p>
-              <h2 className="font-serif text-3xl leading-tight text-foreground sm:text-4xl text-balance">
+              <h2 className="font-serif text-3xl text-balance leading-tight text-foreground sm:text-4xl">
                 {PRODUCT.name}
               </h2>
             </Reveal>
