@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
-export type OrderStatus = "pending" | "paid" | "shipped" | "delivered";
+export type OrderStatus = "pending" | "paid" | "shipped" | "delivered" | "failed";
 
 export interface IShippingAddress {
   name: string;
@@ -74,7 +74,7 @@ const OrderSchema = new Schema<IOrder>(
     },
     status: {
       type: String,
-      enum: ["pending", "paid", "shipped", "delivered"],
+      enum: ["pending", "paid", "shipped", "delivered","failed"],
       default: "pending",
       index: true,
     },
