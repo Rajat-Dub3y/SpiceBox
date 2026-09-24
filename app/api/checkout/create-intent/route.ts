@@ -7,8 +7,6 @@ import { stripe } from "@/lib/stripe";
 // Flow: email + shipping address are collected together in one step, then
 // OTP verification, then this endpoint creates the order (with shipping
 // already known) and the PaymentIntent in one call, then payment.
-// (Shipping is no longer attached after the fact — see the note about
-// /api/orders/[id]/shipping below.)
 
 interface ShippingAddressInput {
   name: string;
@@ -16,6 +14,10 @@ interface ShippingAddressInput {
   line2?: string;
   city: string;
   zip: string;
+}
+
+function log(...args: unknown[]) {
+  console.log("[create-intent]", ...args);
 }
 
 export async function POST(request: NextRequest) {
@@ -27,7 +29,10 @@ export async function POST(request: NextRequest) {
     const shippingAddress: ShippingAddressInput | undefined =
       body?.shippingAddress;
 
+    log("Incoming request", { email, quantity, hasToken: Boolean(verifiedToken) });
+
     if (!email || !verifiedToken) {
+      console.error("[create-intent] Missing email or verifiedToken", { email, hasToken: Boolean(verifiedToken) });
       return NextResponse.json(
         { error: "Email and verified token are required." },
         { status: 400 }
@@ -41,6 +46,7 @@ export async function POST(request: NextRequest) {
       !shippingAddress.city ||
       !shippingAddress.zip
     ) {
+      console.error("[create-intent] Incomplete shipping address", shippingAddress);
       return NextResponse.json(
         { error: "A complete shipping address is required." },
         { status: 400 }
@@ -48,6 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     await connectToDatabase();
+    log("DB connected");
 
     const otpRecord = await OtpVerification.findOne({ email });
 
@@ -57,11 +64,21 @@ export async function POST(request: NextRequest) {
       !otpRecord.tokenExpiresAt ||
       otpRecord.tokenExpiresAt.getTime() < Date.now()
     ) {
+      console.error("[create-intent] OTP verification failed", {
+        email,
+        found: Boolean(otpRecord),
+        tokenMatches: otpRecord?.verifiedToken === verifiedToken,
+        expired: otpRecord?.tokenExpiresAt
+          ? otpRecord.tokenExpiresAt.getTime() < Date.now()
+          : "no-expiry-on-record",
+      });
       return NextResponse.json(
         { error: "Your email verification has expired. Please verify again." },
         { status: 401 }
       );
     }
+
+    log("OTP token verified", { email });
 
     const UNIT_PRICE_CENTS = 5499; // $54.99 — TODO: move to a shared constant/config once more products exist
     const amount = UNIT_PRICE_CENTS * quantity;
@@ -82,32 +99,53 @@ export async function POST(request: NextRequest) {
       status: "pending",
     });
 
+    log("Order created", { orderId: order.id, amount });
+
     // Passing shipping to Stripe too (not just saving it in our own DB) —
     // this feeds Stripe's AVS/fraud checks and shows up on the payment's
-    // receipt/dashboard view, which we didn't have when shipping was
-    // collected after payment.
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency: "usd",
-      receipt_email: email,
-      shipping: {
-        name: shippingAddress.name,
-        address: {
-          line1: shippingAddress.line1,
-          line2: shippingAddress.line2,
-          city: shippingAddress.city,
-          state: "CA",
-          postal_code: shippingAddress.zip,
-          country: "US",
+    // receipt/dashboard view.
+    let paymentIntent;
+    try {
+      paymentIntent = await stripe.paymentIntents.create({
+        amount,
+        currency: "usd",
+        receipt_email: email,
+        shipping: {
+          name: shippingAddress.name,
+          address: {
+            line1: shippingAddress.line1,
+            line2: shippingAddress.line2,
+            city: shippingAddress.city,
+            state: "CA",
+            postal_code: shippingAddress.zip,
+            country: "US",
+          },
         },
-      },
-      metadata: {
-        orderId: order.id,
-      },
-    });
+        metadata: {
+          orderId: order.id,
+        },
+      });
+    } catch (stripeErr) {
+      // Split out from the generic catch below so a Stripe-side failure
+      // (bad API key, account restriction, invalid params) is unmistakably
+      // logged as a Stripe error and not confused with a DB error.
+      console.error("[create-intent] Stripe PaymentIntent creation failed:", stripeErr);
+      // Order was already created — mark it so it's not silently orphaned
+      // in "pending" with no way to ever get paid.
+      order.status = "failed";
+      await order.save();
+      return NextResponse.json(
+        { error: "Could not start payment. Please try again." },
+        { status: 502 }
+      );
+    }
+
+    log("PaymentIntent created", { paymentIntentId: paymentIntent.id, orderId: order.id });
 
     order.stripePaymentIntentId = paymentIntent.id;
     await order.save();
+
+    log("Order linked to PaymentIntent", { orderId: order.id, paymentIntentId: paymentIntent.id });
 
     return NextResponse.json({
       success: true,
@@ -115,7 +153,7 @@ export async function POST(request: NextRequest) {
       clientSecret: paymentIntent.client_secret,
     });
   } catch (error) {
-    console.error("Create checkout intent error:", error);
+    console.error("[create-intent] Unhandled error:", error);
     return NextResponse.json(
       { error: "Something went wrong. Please try again." },
       { status: 500 }

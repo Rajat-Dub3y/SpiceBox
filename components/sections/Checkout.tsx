@@ -24,10 +24,19 @@ import { getStripe } from '@/lib/stripe-client';
 
 type Step = 'details' | 'otp' | 'payment' | 'confirmed';
 
+const isDev = process.env.NODE_ENV === 'development';
+
+// Small helper so every log from this component is easy to find/grep,
+// and so debug detail never leaks into the UI outside of dev.
+function logError(context: string, err: unknown) {
+  console.error(`[checkout:${context}]`, err);
+}
+
 export function Checkout() {
   const [step, setStep] = React.useState<Step>('details');
   const [loading, setLoading] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [errorDetail, setErrorDetail] = React.useState<string | null>(null);
 
   // Contact + shipping, all collected in one step now
   const [email, setEmail] = React.useState('');
@@ -46,10 +55,15 @@ export function Checkout() {
   const detailsValid =
     email && firstName && lastName && address && city && zip;
 
+  function setError(message: string, detail?: unknown) {
+    setErrorMessage(message);
+    setErrorDetail(detail !== undefined ? String((detail as Error)?.message ?? detail) : null);
+  }
+
   // Step 1: contact + shipping details, then request OTP
   async function handleDetailsSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setErrorMessage(null);
+    setError('');
     setLoading(true);
     try {
       const res = await fetch('/api/otp/request', {
@@ -59,12 +73,14 @@ export function Checkout() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setErrorMessage(data.error || 'Could not send code. Please try again.');
+        logError('otp-request', { status: res.status, data });
+        setError(data.error || 'Could not send code. Please try again.', data);
         return;
       }
       setStep('otp');
-    } catch {
-      setErrorMessage('Network error. Please try again.');
+    } catch (err) {
+      logError('otp-request:network', err);
+      setError('Network error. Please try again.', err);
     } finally {
       setLoading(false);
     }
@@ -73,7 +89,7 @@ export function Checkout() {
   // Step 2: verify OTP, then create the order + PaymentIntent together
   // (shipping is already known at this point, so both happen in one call).
   async function handleOtpVerify() {
-    setErrorMessage(null);
+    setError('');
     setLoading(true);
     try {
       const verifyRes = await fetch('/api/otp/verify', {
@@ -83,7 +99,8 @@ export function Checkout() {
       });
       const verifyData = await verifyRes.json();
       if (!verifyRes.ok) {
-        setErrorMessage(verifyData.error || 'Incorrect code. Please try again.');
+        logError('otp-verify', { status: verifyRes.status, data: verifyData });
+        setError(verifyData.error || 'Incorrect code. Please try again.', verifyData);
         return;
       }
 
@@ -108,15 +125,21 @@ export function Checkout() {
       });
       const intentData = await intentRes.json();
       if (!intentRes.ok) {
-        setErrorMessage(intentData.error || 'Could not start checkout. Please try again.');
+        // This is the step that talks to Stripe (PaymentIntent creation) —
+        // if checkout is failing right after OTP verification, the error
+        // is almost always surfacing here. Logging status + body so a
+        // 502 (Stripe-side) is distinguishable from a 400/401 (our validation).
+        logError('create-intent', { status: intentRes.status, data: intentData });
+        setError(intentData.error || 'Could not start checkout. Please try again.', intentData);
         return;
       }
 
       setClientSecret(intentData.clientSecret);
       setOrderId(intentData.orderId);
       setStep('payment');
-    } catch {
-      setErrorMessage('Network error. Please try again.');
+    } catch (err) {
+      logError('otp-verify:network', err);
+      setError('Network error. Please try again.', err);
     } finally {
       setLoading(false);
     }
@@ -204,7 +227,12 @@ export function Checkout() {
               role="alert"
               className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 font-sans text-sm text-destructive"
             >
-              {errorMessage}
+              <p>{errorMessage}</p>
+              {isDev && errorDetail && (
+                <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-words font-mono text-xs text-destructive/70">
+                  {errorDetail}
+                </pre>
+              )}
             </div>
           )}
 
@@ -362,7 +390,7 @@ export function Checkout() {
                 <button
                   onClick={() => {
                     setStep('details');
-                    setErrorMessage(null);
+                    setError('');
                   }}
                   className="w-full text-center font-sans text-xs text-muted-foreground hover:text-foreground"
                 >
@@ -378,7 +406,7 @@ export function Checkout() {
               <Elements stripe={getStripe()} options={{ clientSecret }}>
                 <PaymentStepInner
                   onSuccess={handlePaymentSuccess}
-                  onError={setErrorMessage}
+                  onError={(message, detail) => setError(message, detail)}
                 />
               </Elements>
             </Reveal>
@@ -413,14 +441,17 @@ function PaymentStepInner({
   onError,
 }: {
   onSuccess: () => void;
-  onError: (message: string) => void;
+  onError: (message: string, detail?: unknown) => void;
 }) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = React.useState(false);
 
   async function handlePay() {
-    if (!stripe || !elements) return;
+    if (!stripe || !elements) {
+      logError('pay:not-ready', { hasStripe: Boolean(stripe), hasElements: Boolean(elements) });
+      return;
+    }
 
     onError('');
     setSubmitting(true);
@@ -434,9 +465,11 @@ function PaymentStepInner({
       // Same PaymentIntent stays alive — Payment Element resets itself so
       // the customer can just fix their card details and hit Pay again.
       // Nothing upstream (email, OTP, order, shipping) needs to restart.
+      logError('pay:confirm', error);
       onError(
         error.message ||
-          "Your payment couldn't be processed. You haven't been charged — please try again."
+          "Your payment couldn't be processed. You haven't been charged — please try again.",
+        error
       );
       setSubmitting(false);
       return;
@@ -447,7 +480,8 @@ function PaymentStepInner({
       return;
     }
 
-    onError('Payment did not complete. Please try again.');
+    logError('pay:incomplete', paymentIntent);
+    onError('Payment did not complete. Please try again.', paymentIntent);
     setSubmitting(false);
   }
 
