@@ -1,3 +1,6 @@
+'use client';
+
+import * as React from 'react';
 import { TreePine, Search, ScrollText } from 'lucide-react';
 import { Reveal } from '@/components/Reveal';
 
@@ -5,24 +8,23 @@ const pillars = [
   {
     icon: TreePine,
     title: 'Tree Planted',
-    // [PLACEHOLDER: exact mechanic — e.g. "1 tree planted per order"]
-    body: '[PLACEHOLDER: exact mechanic — e.g. For every spice box you order, we plant one tree through our reforestation partner.]',
+    body: 'For every spice box you order, we plant one tree through our reforestation partner.',
   },
   {
     icon: Search,
     title: 'Trackable Impact',
-    // [PLACEHOLDER: how tracking works — e.g. unique tracking link per order]
-    body: '[PLACEHOLDER: how tracking works — e.g. You receive a unique tracking link so you can see where your tree was planted and follow its growth.]',
+    body: 'You receive a unique tracking link so you can see where your tree was planted and follow its growth.',
   },
   {
     icon: ScrollText,
     title: 'Certificate of Planting',
-    // [PLACEHOLDER: certificate details — e.g. digital certificate with partner org name]
-    body: '[PLACEHOLDER: certificate details — e.g. A digital certificate of planting is emailed to you, referencing our partner organization and the region of your tree.]',
+    body: 'A digital certificate of planting is emailed to you, referencing our partner organization and the region of your tree.',
   },
 ];
 
 export function Promise() {
+  const [isVideoLoaded, setIsVideoLoaded] = React.useState(false);
+
   return (
     <section
       id="promise"
@@ -30,13 +32,35 @@ export function Promise() {
     >
       <div className="mx-auto max-w-5xl">
         <Reveal>
-          <p className="mb-4 text-center text-sm uppercase tracking-[0.25em] text-accent font-sans">
+          <p className="mb-4 text-center font-sans text-sm uppercase tracking-[0.25em] text-accent">
             Our Promise
           </p>
         </Reveal>
 
+        {/* Video only visible once loaded */}
+        <div
+          className={`transition-opacity duration-700 ease-in-out ${
+            isVideoLoaded ? 'opacity-100' : 'hidden opacity-0'
+          }`}
+        >
+          <Reveal delay={50}>
+            <div className="mx-auto my-10 aspect-video w-full max-w-4xl overflow-hidden rounded-2xl bg-card shadow-md">
+              <video
+                src="/video-optimized.mp4"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                onCanPlayThrough={() => setIsVideoLoaded(true)}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          </Reveal>
+        </div>
+
         <Reveal delay={100}>
-          <h2 className="text-center font-serif text-3xl leading-tight text-foreground sm:text-4xl md:text-5xl text-balance">
+          <h2 className="text-center font-serif text-3xl text-balance leading-tight text-foreground sm:text-4xl md:text-5xl">
             Every box gives something back to the forest it came from.
           </h2>
         </Reveal>

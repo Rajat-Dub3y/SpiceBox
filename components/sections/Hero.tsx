@@ -11,17 +11,13 @@ export function Hero() {
     <section className="relative h-screen min-h-[600px] w-full overflow-hidden">
       <video
         className="absolute inset-0 h-full w-full object-cover"
+        src="/hero.mp4"
         autoPlay
         muted
         loop
         playsInline
-        poster="https://images.pexels.com/videos/33560881/aerialphotography-chasingwaterfalls-droneview-hogenakkalfalls-33560881.jpeg?auto=compress&cs=tinysrgb&h=1080&fit=crop&w=1920"
-      >
-        <source
-          src="https://videos.pexels.com/video-files/33560881/14268733_2560_1440_60fps.mp4"
-          type="video/mp4"
-        />
-      </video>
+        preload="auto"
+      />
 
       <div className="absolute inset-0 bg-gradient-to-b from-primary/40 via-primary/30 to-primary/60" />
 
