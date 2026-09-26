@@ -13,7 +13,8 @@ export interface IShippingAddress {
 
 export interface IOrder extends Document {
   email: string;
-  stripePaymentIntentId: string | null; // unique — doubles as our webhook idempotency guard
+  stripeCheckoutSessionId: string | null; // unique — set by the webhook when the Checkout Session completes; primary idempotency guard
+  stripePaymentIntentId: string | null; // kept for reference/lookups, but no longer the idempotency guard
   amount: number; // in cents
   quantity: number;
   shippingAddress: IShippingAddress; // known at order creation — collected in the same step as email, before OTP
@@ -49,6 +50,12 @@ const OrderSchema = new Schema<IOrder>(
       trim: true,
       index: true,
     },
+    stripeCheckoutSessionId: {
+      type: String,
+      default: null,
+      // Same reasoning as stripePaymentIntentId below: no `unique`/`sparse`
+      // here — see the partial index at the bottom of this file instead.
+    },
     stripePaymentIntentId: {
       type: String,
       default: null,
@@ -74,7 +81,7 @@ const OrderSchema = new Schema<IOrder>(
     },
     status: {
       type: String,
-      enum: ["pending", "paid", "shipped", "delivered","failed"],
+      enum: ["pending", "paid", "shipped", "delivered", "failed"],
       default: "pending",
       index: true,
     },
@@ -106,11 +113,19 @@ const OrderSchema = new Schema<IOrder>(
   { timestamps: true }
 );
 
-// Unique only when stripePaymentIntentId is an actual string — this is
-// what makes it safe for every new pending order to have `null` here
-// without colliding, while still guaranteeing no two orders ever share
-// the same real PaymentIntent ID once one is assigned (our webhook
-// idempotency guard).
+// Unique only when stripeCheckoutSessionId is an actual string — this is
+// the primary idempotency guard for the new Checkout Session webhook flow.
+OrderSchema.index(
+  { stripeCheckoutSessionId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { stripeCheckoutSessionId: { $type: "string" } },
+  }
+);
+
+// Kept from the old PaymentIntent-based flow — still useful for looking an
+// order up by PaymentIntent id, and still guards against two orders ever
+// sharing one, even though it's no longer the primary idempotency check.
 OrderSchema.index(
   { stripePaymentIntentId: 1 },
   {

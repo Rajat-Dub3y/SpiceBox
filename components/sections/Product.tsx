@@ -1,6 +1,5 @@
 'use client';
 
-import * as React from 'react';
 import Image from 'next/image';
 import { Check } from 'lucide-react';
 import {
@@ -27,6 +26,18 @@ const MEDIA_ITEMS: MediaItem[] = [
     alt: PRODUCT_IMAGE_ALTS[i] ?? PRODUCT.name,
   })),
   { type: 'video', src: '/vide.mp4', alt: `${PRODUCT.name} video preview` },
+];
+
+// Complete specs list covering points 7 & 8
+const PRODUCT_SPECS = [
+  { label: 'Origin', value: 'Handmade in India' },
+  { label: 'Availability', value: 'In stock — ships from the US' },
+  { label: 'Dimensions', value: '8" × 8" × 2.5" (20.3 cm × 20.3 cm × 6.3 cm)' },
+  { label: 'Weight', value: '1.8 lbs (815g)' },
+  { label: 'Capacity', value: '7 compartments (~0.5 cup / 120ml per compartment)' },
+  { label: 'Finish', value: '100% Food-safe natural oil finish' },
+  { label: 'Care Instructions', value: 'Wipe clean with a damp cloth; do not soak or dishwasher. Occasional oiling recommended.' },
+  ...(PRODUCT.specs || []),
 ];
 
 export function Product() {
@@ -79,14 +90,14 @@ export function Product() {
                 {MEDIA_ITEMS.slice(0, 6).map((item) => (
                   <div
                     key={item.src}
-                    className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-secondary flex items-center justify-center"
+                    className="relative h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md bg-secondary"
                   >
                     {item.type === 'video' ? (
                       <video
                         src={item.src}
                         muted
                         preload="metadata"
-                        className="h-full w-full object-cover pointer-events-none"
+                        className="pointer-events-none h-full w-full object-cover"
                       />
                     ) : (
                       <Image
@@ -107,9 +118,9 @@ export function Product() {
           <div className="flex flex-col">
             <Reveal>
               <p className="mb-3 font-sans text-sm uppercase tracking-[0.25em] text-accent">
-                The Product
+                Handmade in India
               </p>
-              <h2 className="font-serif text-3xl text-balance leading-tight text-foreground sm:text-4xl">
+              <h2 className="text-balance font-serif text-3xl leading-tight text-foreground sm:text-4xl">
                 {PRODUCT.name}
               </h2>
             </Reveal>
@@ -122,7 +133,7 @@ export function Product() {
 
             <Reveal delay={200}>
               <ul className="mt-8 space-y-3">
-                {PRODUCT.specs.map((spec) => (
+                {PRODUCT_SPECS.map((spec) => (
                   <li
                     key={spec.label}
                     className="flex items-start gap-3 font-sans text-sm"
@@ -148,7 +159,7 @@ export function Product() {
                   ${PRODUCT.price.toFixed(2)}
                 </span>
                 <span className="font-sans text-sm text-muted-foreground">
-                  {PRODUCT.currency} · includes spoon &amp; gift-ready packaging
+                  {PRODUCT.currency} · <span className="font-medium text-emerald-600 dark:text-emerald-400">In stock — ships from the US</span>
                 </span>
               </div>
             </Reveal>

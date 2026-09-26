@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Mail, Lock, CreditCard, Check, ArrowRight } from 'lucide-react';
+import { Mail, Lock, CreditCard, Check, ArrowRight, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -125,10 +125,6 @@ export function Checkout() {
       });
       const intentData = await intentRes.json();
       if (!intentRes.ok) {
-        // This is the step that talks to Stripe (PaymentIntent creation) —
-        // if checkout is failing right after OTP verification, the error
-        // is almost always surfacing here. Logging status + body so a
-        // 502 (Stripe-side) is distinguishable from a 400/401 (our validation).
         logError('create-intent', { status: intentRes.status, data: intentData });
         setError(intentData.error || 'Could not start checkout. Please try again.', intentData);
         return;
@@ -145,8 +141,7 @@ export function Checkout() {
     }
   }
 
-  // Called by PaymentStepInner once stripe.confirmPayment() actually
-  // succeeds — nothing left to collect afterward now, straight to confirmed.
+  // Called by PaymentStepInner once stripe.confirmPayment() actually succeeds
   function handlePaymentSuccess() {
     setStep('confirmed');
   }
@@ -434,8 +429,6 @@ export function Checkout() {
   );
 }
 
-// Broken out because useStripe/useElements only work inside an <Elements>
-// provider, which itself needs the clientSecret before it can render.
 function PaymentStepInner({
   onSuccess,
   onError,
@@ -462,9 +455,6 @@ function PaymentStepInner({
     });
 
     if (error) {
-      // Same PaymentIntent stays alive — Payment Element resets itself so
-      // the customer can just fix their card details and hit Pay again.
-      // Nothing upstream (email, OTP, order, shipping) needs to restart.
       logError('pay:confirm', error);
       onError(
         error.message ||
@@ -487,12 +477,32 @@ function PaymentStepInner({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <p className="font-sans text-sm text-muted-foreground">Payment method</p>
-        <span className="font-serif text-2xl text-foreground">
-          ${PRODUCT.price.toFixed(2)}
-        </span>
+      {/* Price breakdown and shipping guarantee */}
+      <div className="rounded-md bg-muted/40 p-4 font-sans text-sm">
+        <div className="flex items-center justify-between pb-2">
+          <span className="text-muted-foreground">Subtotal</span>
+          <span className="font-medium text-foreground">${PRODUCT.price.toFixed(2)}</span>
+        </div>
+        <div className="flex items-center justify-between border-b border-border/60 pb-3">
+          <span className="text-muted-foreground">Shipping (US)</span>
+          <span className="font-semibold text-emerald-600 dark:text-emerald-400">FREE</span>
+        </div>
+        <div className="flex items-center justify-between pt-3 text-base">
+          <span className="font-medium text-foreground">Total</span>
+          <span className="font-serif text-2xl font-semibold text-foreground">
+            ${PRODUCT.price.toFixed(2)}
+          </span>
+        </div>
       </div>
+
+      <div className="flex items-start gap-3 rounded-md border border-border/80 bg-background p-3 text-xs text-muted-foreground">
+        <Truck className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+        <div>
+          <p className="font-medium text-foreground">Free Standard Shipping in the US</p>
+          <p className="mt-0.5">Ships from California via USPS in 3–5 business days.</p>
+        </div>
+      </div>
+
       <PaymentElement />
       <Button
         onClick={handlePay}
