@@ -1,4 +1,5 @@
 export const PRODUCT = {
+  id: 'hexagonal-spice-box-neem-wood',
   name: 'Hexagonal Neem Wood Spice Box',
   price: 54.99,
   currency: 'USD',

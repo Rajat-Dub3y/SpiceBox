@@ -1,6 +1,8 @@
+import { GoogleTag } from '@/components/GoogleTag';
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter, Playfair_Display } from 'next/font/google';
+import { CookieConsentBanner } from '@/components/CookieConsentBanner';
 
 const sans = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const serif = Playfair_Display({
@@ -143,7 +145,9 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <GoogleTag />
         {children}
+        <CookieConsentBanner />
       </body>
     </html>
   );

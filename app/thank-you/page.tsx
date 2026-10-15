@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Check } from 'lucide-react';
+import { trackPurchase } from '@/lib/gtag-events';
 
 interface SessionDetails {
   orderNumber: string;
@@ -18,6 +19,17 @@ export default function ThankYouPage() {
   const [status, setStatus] = React.useState<'loading' | 'success' | 'error'>('loading');
   const [details, setDetails] = React.useState<SessionDetails | null>(null);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+
+  // Guards against firing the purchase/conversion event twice — e.g. if
+  // this component re-renders, or the buyer refreshes this exact URL.
+  // sessionStorage (not localStorage) so a refresh of the SAME tab is
+  // still blocked, but it doesn't follow them around forever.
+  function alreadyTracked(sessionId: string) {
+    return window.sessionStorage.getItem(`purchase-tracked:${sessionId}`) === '1';
+  }
+  function markTracked(sessionId: string) {
+    window.sessionStorage.setItem(`purchase-tracked:${sessionId}`, '1');
+  }
 
   React.useEffect(() => {
     if (!sessionId) {
@@ -43,6 +55,18 @@ export default function ThankYouPage() {
         if (!cancelled) {
           setDetails(data);
           setStatus('success');
+
+          if (sessionId && !alreadyTracked(sessionId)) {
+            trackPurchase({
+              transactionId: data.orderNumber,
+              value: (data.amountTotal ?? 0) / 100,
+              currency: data.currency?.toUpperCase() || 'USD',
+              itemId: 'hexagonal-spice-box-neem-wood',
+              itemName: 'Hexagonal Spice Box — Neem Wood',
+              buyerEmail: data.email,
+            });
+            markTracked(sessionId);
+          }
         }
       } catch (err) {
         console.error('[thank-you] Network error:', err);

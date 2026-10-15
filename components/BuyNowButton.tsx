@@ -3,6 +3,8 @@
 import * as React from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PRODUCT } from '@/lib/product';
+import { trackBeginCheckout } from '@/lib/gtag-events';
 
 function logError(context: string, err: unknown) {
   console.error(`[buy-now:${context}]`, err);
@@ -15,6 +17,15 @@ export function BuyNowButton() {
   async function handleBuyNow() {
     setErrorMessage(null);
     setLoading(true);
+
+    // Fire before the network call — we want this logged even if the
+    // redirect to Stripe fails or is slow, since intent was expressed here.
+    trackBeginCheckout({
+      itemId: PRODUCT.id,
+      itemName: PRODUCT.name,
+      price: PRODUCT.price,
+    });
+
     try {
       const res = await fetch('/api/checkout/create-session', {
         method: 'POST',
@@ -28,9 +39,6 @@ export function BuyNowButton() {
         return;
       }
 
-      // Full redirect to Stripe's hosted Checkout page — email, shipping
-      // address, and payment (card / Apple Pay / Google Pay) all happen
-      // there, so nothing else needs to run client-side after this.
       window.location.href = data.url;
     } catch (err) {
       logError('network', err);
