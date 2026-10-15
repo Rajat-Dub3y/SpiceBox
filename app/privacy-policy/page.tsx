@@ -50,7 +50,7 @@ const FAQS = [
 export default function PrivacyPolicyPage() {
   const [activeSection, setActiveSection] = useState('who-we-are');
   const [searchQuery, setSearchQuery] = useState('');
-  const [openFaq, setOpenFaq] = useState(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export default function PrivacyPolicyPage() {
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  const scrollToSection = (id) => {
+  const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
       const yOffset = -100;

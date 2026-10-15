@@ -12,7 +12,7 @@ interface SessionDetails {
   currency: string | null;
 }
 
-export default function ThankYouPage() {
+function ThankYouContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
 
@@ -20,10 +20,6 @@ export default function ThankYouPage() {
   const [details, setDetails] = React.useState<SessionDetails | null>(null);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
-  // Guards against firing the purchase/conversion event twice — e.g. if
-  // this component re-renders, or the buyer refreshes this exact URL.
-  // sessionStorage (not localStorage) so a refresh of the SAME tab is
-  // still blocked, but it doesn't follow them around forever.
   function alreadyTracked(sessionId: string) {
     return window.sessionStorage.getItem(`purchase-tracked:${sessionId}`) === '1';
   }
@@ -154,5 +150,21 @@ export default function ThankYouPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function ThankYouPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <main className="px-6 py-24 sm:py-32">
+          <div className="mx-auto max-w-xl text-center">
+            <p className="font-sans text-sm text-muted-foreground">Loading…</p>
+          </div>
+        </main>
+      }
+    >
+      <ThankYouContent />
+    </React.Suspense>
   );
 }

@@ -67,7 +67,8 @@ export async function POST(request: NextRequest) {
       let order = await Order.findOne({ stripeCheckoutSessionId: session.id });
 
       if (!order) {
-        const shipping = session.shipping_details ?? session.customer_details;
+        const shippingDetails = (session as unknown as { shipping_details?: { name?: string; address?: Stripe.Address | null } | null }).shipping_details;
+        const shipping = shippingDetails ?? session.customer_details;
         const address = shipping?.address;
 
         order = await Order.create({
